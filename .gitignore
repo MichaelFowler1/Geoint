@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.env
+*.db
+geoint.db
+*.pt
+data/
+uploads/
+.venv/
+.pytest_cache/
+.ruff_cache/

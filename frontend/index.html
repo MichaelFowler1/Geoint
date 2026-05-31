@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GEOINT // COP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <aside id="panel">
+        <header>
+          <div class="brand">GEOINT<span>//</span>COP</div>
+          <div class="sub">COMMON OPERATING PICTURE &middot; v0.1</div>
+        </header>
+
+        <section class="stat-row">
+          <div class="stat">
+            <span class="num" id="ac-count">0</span>
+            <span class="lbl">LIVE TRACKS</span>
+          </div>
+          <div class="stat">
+            <span class="num" id="det-count">0</span>
+            <span class="lbl">DETECTIONS</span>
+          </div>
+          <div class="stat">
+            <span class="num" id="link-state">&middot;&middot;</span>
+            <span class="lbl">FEED</span>
+          </div>
+        </section>
+
+        <section class="block">
+          <h2>Imagery Analysis</h2>
+          <label class="upload">
+            <input type="file" id="img-input" accept="image/*,.tif,.tiff" />
+            <span id="upload-label">Drop / select overhead image</span>
+          </label>
+          <div class="hint">Detector runs on GPU &middot; OpenAI writes the assessment</div>
+          <div id="analyze-status"></div>
+        </section>
+
+        <section class="block" id="sitrep-block" hidden>
+          <h2>SITREP</h2>
+          <div id="sitrep" class="sitrep"></div>
+          <h3>Scene Assessment</h3>
+          <div id="scene" class="scene"></div>
+          <h3>Counts</h3>
+          <ul id="counts" class="counts"></ul>
+        </section>
+
+        <footer><span id="clock"></span></footer>
+      </aside>
+      <main id="map"></main>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

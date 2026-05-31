@@ -1,0 +1,28 @@
+services:
+  api:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://geoint:geoint@db:5432/geoint
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: geoint
+      POSTGRES_PASSWORD: geoint
+      POSTGRES_DB: geoint
+    volumes:
+      - geoint_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U geoint"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  geoint_db:
