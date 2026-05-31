@@ -13,7 +13,7 @@ The vision pipeline is split on purpose:
   the image, and a second call fuses the detector's counts with that assessment into
   a SITREP.
 
-> In a classified deployment the OpenAI calls swap for a local model (e.g. Ollama) so
+> In a deployment the OpenAI calls swap for a local model (e.g. Ollama) so
 > no imagery leaves the enclave. `backend/reporting.py` is the only thing that changes.
 
 ## Architecture
@@ -68,7 +68,7 @@ See `.env.example`. Key vars: `OPENAI_API_KEY`, `OPENSKY_CLIENT_ID/SECRET`,
 - [ ] Deploy (API/track/UI tier is GPU-free; detection maps to a GPU node)
 - [ ] AuthN/Z (currently open — see Security below)
 - [ ] AIS (maritime) feed as a second track source
-- [ ] Local-model reporting backend (Ollama) for offline/classified use
+- [ ] Local-model reporting backend (Ollama) for offline use
 
 ## Security & Compliance
 
