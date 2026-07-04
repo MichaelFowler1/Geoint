@@ -22,6 +22,7 @@ from rasterio.warp import transform as warp_transform
 from ultralytics import YOLO
 
 TIF, MODEL, CONF = "naip_clip.tif", "yolo26m-obb.pt", 0.20
+IMGSZ = 2048   # infer at native resolution; the 640px default misses small aircraft
 BG, INK, DIM, ACC = "#070b12", "#d7e2f0", "#6b7d95", "#ffb020"
 
 # --- imagery + georeference ---
@@ -33,7 +34,7 @@ with rasterio.open(TIF) as ds:
 
 # --- real detection on the GPU ---
 model = YOLO(MODEL)
-r = model.predict(rgb, conf=CONF, device="cuda", verbose=False)[0]
+r = model.predict(rgb, conf=CONF, imgsz=IMGSZ, device="cuda", verbose=False)[0]
 obb = r.obb
 labels = [r.names[int(c)] for c in obb.cls]
 counts = Counter(labels)
@@ -46,8 +47,10 @@ fig = plt.figure(figsize=(11, 8.6), facecolor=BG)
 
 fig.text(0.05, 0.960, "GEOINT-COP  ·  COMMON OPERATING PICTURE",
          fontsize=16, fontweight="bold")
-n = len(polys)
-fig.text(0.95, 0.960, f"{n} aircraft detected", ha="right",
+n_planes = counts.get("plane", 0)
+n_other = len(polys) - n_planes
+headline = f"{n_planes} aircraft detected" + (f"  +{n_other} vehicles" if n_other else "")
+fig.text(0.95, 0.960, headline, ha="right",
          fontsize=14, fontweight="bold", color=ACC)
 fig.text(0.05, 0.922, "Overhead imagery  →  GPU detector (RT-DETR / YOLO-OBB)  →  "
                       "georeferenced detections  →  AI SITREP  +  live ADS-B tracks",
@@ -77,5 +80,5 @@ ax.text(0.985, 0.02, "DETECTIONS\n" + "\n".join(lines),
 
 os.makedirs("docs", exist_ok=True)
 fig.savefig("docs/hero.png", dpi=130, facecolor=BG)
-print(f"[+] wrote docs/hero.png - {n} detections: {dict(counts)}")
+print(f"[+] wrote docs/hero.png - {len(polys)} detections: {dict(counts)}")
 print(f"    scene center: {lat:.5f}, {lon:.5f}")
