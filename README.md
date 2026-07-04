@@ -4,6 +4,11 @@ A fused common operating picture: **live air tracks** from a public ADS-B feed a
 **object detections from overhead imagery**, on one map, with an automatically
 generated SITREP.
 
+![GEOINT-COP: 43 aircraft detected at LAX from NAIP imagery](docs/hero.png)
+
+*Real output: the project's OBB detector (CUDA) over the bundled public-domain
+NAIP scene of LAX — regenerate with `python make_hero.py`.*
+
 The vision pipeline is split on purpose:
 
 - **Precise object counts → a real detector on GPU.** RT-DETR / YOLO (Ultralytics)
