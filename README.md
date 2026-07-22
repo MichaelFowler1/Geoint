@@ -97,3 +97,13 @@ _(planned)_ — today the API is open and intended for local/demo use.
 
 **STIG-aligned hardening:** non-root runtime, slim base, dependency pinning, image
 vulnerability gate. Run a container STIG/CIS benchmark scan before any real deployment.
+
+## License
+
+Licensed under the **GNU Affero General Public License v3.0** (AGPL-3.0).
+See [LICENSE](LICENSE).
+
+This project depends on [Ultralytics](https://github.com/ultralytics/ultralytics)
+YOLO, which is AGPL-3.0 licensed. AGPL-3.0 is therefore used here for license
+compatibility. If you deploy a modified version of this software over a network,
+AGPL-3.0 section 13 requires that you offer the corresponding source to its users.
