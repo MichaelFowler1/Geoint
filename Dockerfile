@@ -7,6 +7,11 @@ RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 # --- runtime stage ---
 FROM python:3.12-slim
 # Hardening: dedicated non-root user, minimal packages.
+# The slim base lags Debian's security repo; pull published fixes so the
+# Trivy HIGH/CRITICAL gate reflects real exposure, not base-image lag.
+RUN apt-get update \
+    && apt-get -y upgrade \
+    && rm -rf /var/lib/apt/lists/*
 RUN useradd --create-home --uid 10001 appuser
 WORKDIR /app
 COPY --from=build /install /usr/local
