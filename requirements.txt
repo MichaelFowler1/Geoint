@@ -2,8 +2,8 @@ fastapi==0.136.3
 uvicorn[standard]==0.48.0
 httpx==0.28.1
 pydantic==2.13.4
-pydantic-settings==2.14.1
-python-multipart==0.0.29
+pydantic-settings==2.14.2
+python-multipart==0.0.31
 openai==2.38.0
-Pillow==12.2.0
+Pillow==12.3.0
 psycopg[binary]==3.3.4
