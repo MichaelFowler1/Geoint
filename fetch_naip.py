@@ -1,3 +1,6 @@
+# Copyright 2026 Michael Fowler
+# SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+
 """Fetch an app-ready NAIP GeoTIFF clip over a point (continental US only).
 
 Usage:

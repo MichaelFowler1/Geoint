@@ -1,3 +1,6 @@
+// Copyright 2026 Michael Fowler
+// SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+
 const map = L.map("map", { zoomControl: true }).setView([38.9, -77.04], 9);
 
 L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
