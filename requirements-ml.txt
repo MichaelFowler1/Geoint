@@ -1,5 +1,8 @@
 # Heavy detector extras — install on the GPU box (RTX 3080 / CUDA).
 # This pulls torch; for CUDA wheels see https://pytorch.org/get-started/locally/
-ultralytics==8.4.57
+# (install the matching torch + torchvision pair from there first).
+torch==2.14.0
+torchvision==0.29.0
+transformers==5.17.0
 rasterio==1.5.0
 numpy==2.4.6

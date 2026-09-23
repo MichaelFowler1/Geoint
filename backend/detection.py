@@ -32,69 +32,95 @@ def _resolve_device(requested: str) -> str:
 
 
 def _load_model():
+    """Load the Hugging Face detector once: (processor, model, device)."""
     global _model
     if _model is not None:
         return _model
     s = get_settings()
     try:
-        if "rtdetr" in s.detector_model.lower():
-            from ultralytics import RTDETR  # noqa: PLC0415
-
-            _model = RTDETR(s.detector_model)
-        else:
-            from ultralytics import YOLO  # noqa: PLC0415
-
-            _model = YOLO(s.detector_model)
+        from transformers import (  # noqa: PLC0415
+            AutoImageProcessor,
+            AutoModelForObjectDetection,
+        )
     except ImportError as exc:
         raise DetectorUnavailable(
             "Detector requires ML extras. Install: pip install -r requirements-ml.txt"
         ) from exc
-    logger.info(
-        "Loaded detector %s on %s",
-        s.detector_model,
-        _resolve_device(s.detector_device),
+    device = _resolve_device(s.detector_device)
+    # Pinned to a commit so a changed upload can't swap the weights underneath.
+    processor = AutoImageProcessor.from_pretrained(
+        s.detector_model, revision=s.detector_revision
     )
+    model = AutoModelForObjectDetection.from_pretrained(
+        s.detector_model, revision=s.detector_revision, use_safetensors=True
+    )
+    model.to(device).eval()
+    _model = (processor, model, device)
+    logger.info("Loaded detector %s on %s", s.detector_model, device)
     return _model
+
+
+def _read_rgb(image_path: str):
+    """Open an image as 8-bit RGB. GeoTIFFs go through rasterio (bands 1-3),
+    so a 4-band NAIP scene loses its near-infrared band rather than failing."""
+    from PIL import Image  # noqa: PLC0415
+
+    try:
+        import numpy as np  # noqa: PLC0415
+        import rasterio  # noqa: PLC0415
+
+        with rasterio.open(image_path) as ds:
+            if ds.count >= 3 and ds.dtypes[0] == "uint8":
+                rgb = np.transpose(ds.read([1, 2, 3]), (1, 2, 0))
+                return Image.fromarray(np.ascontiguousarray(rgb), mode="RGB")
+    except Exception:  # noqa: BLE001, S110 - fall back to PIL for anything else
+        pass
+    with Image.open(image_path) as img:
+        return img.convert("RGB")
+
+
+def to_detections(
+    scores: list[float],
+    labels: list[int],
+    boxes: list[list[float]],
+    id2label: dict[int, str],
+) -> list[Detection]:
+    """Pure helper: post-processed detector output -> Detection list. (Unit-tested.)"""
+    return [
+        Detection(
+            label=id2label.get(int(cls_id), str(int(cls_id))),
+            confidence=float(score),
+            bbox_px=[float(v) for v in box],
+        )
+        for score, cls_id, box in zip(scores, labels, boxes)
+    ]
 
 
 def run_detection(image_path: str) -> list[Detection]:
     """Run the object detector (CUDA on the RTX 3080 when available).
 
-    Handles both standard axis-aligned models (COCO) and oriented-bounding-box
-    models such as the DOTA-pretrained ``*-obb`` weights, so the detector stays
-    swappable via DETECTOR_MODEL.
+    Any Hugging Face object-detection checkpoint works through DETECTOR_MODEL,
+    so the detector stays swappable. Boxes are axis-aligned pixel xyxy.
     """
+    import torch  # noqa: PLC0415
+
     s = get_settings()
-    model = _load_model()
-    device = _resolve_device(s.detector_device)
-    results = model.predict(
-        image_path, conf=s.detection_conf, device=device, verbose=False
+    processor, model, device = _load_model()
+    image = _read_rgb(image_path)
+    inputs = processor(images=image, return_tensors="pt").to(device)
+    with torch.no_grad():
+        outputs = model(**inputs)
+    result = processor.post_process_object_detection(
+        outputs,
+        threshold=s.detection_conf,
+        target_sizes=[(image.height, image.width)],
+    )[0]
+    return to_detections(
+        result["scores"].tolist(),
+        result["labels"].tolist(),
+        result["boxes"].tolist(),
+        model.config.id2label,
     )
-    detections: list[Detection] = []
-    for r in results:
-        names = r.names
-        obb = getattr(r, "obb", None)
-        if obb is not None and len(obb) > 0:  # aerial OBB models (DOTA)
-            for i in range(len(obb)):
-                cls_id = int(obb.cls[i])
-                detections.append(
-                    Detection(
-                        label=names.get(cls_id, str(cls_id)),
-                        confidence=float(obb.conf[i]),
-                        bbox_px=[float(v) for v in obb.xyxy[i].tolist()],
-                    )
-                )
-        elif r.boxes is not None:  # standard COCO models
-            for box in r.boxes:
-                cls_id = int(box.cls[0])
-                detections.append(
-                    Detection(
-                        label=names.get(cls_id, str(cls_id)),
-                        confidence=float(box.conf[0]),
-                        bbox_px=[float(v) for v in box.xyxy[0].tolist()],
-                    )
-                )
-    return detections
 
 
 def georeference(image_path: str, detections: list[Detection]) -> bool:

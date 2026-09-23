@@ -23,7 +23,9 @@ class Settings(BaseSettings):
     track_poll_seconds: int = 12
 
     # Detector — runs on the RTX 3080. "auto" -> CUDA when available, else CPU.
-    detector_model: str = "rtdetr-l.pt"
+    # Any Hugging Face object-detection checkpoint; pin it to a commit.
+    detector_model: str = "PekingU/rtdetr_r50vd"
+    detector_revision: str = "df939e661d8c52e80608d1ec566561aabd25a4e7"
     detector_device: str = "auto"
     detection_conf: float = 0.25
 

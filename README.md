@@ -4,16 +4,21 @@ A fused common operating picture: **live air tracks** from a public ADS-B feed a
 **object detections from overhead imagery**, on one map, with an automatically
 generated SITREP.
 
-![GEOINT-COP: 43 aircraft detected at LAX from NAIP imagery](docs/hero.png)
+![GEOINT-COP: aircraft detected at LAX from NAIP imagery](docs/hero.png)
 
-*Real output: the project's OBB detector (CUDA) over the bundled public-domain
-NAIP scene of LAX — regenerate with `python make_hero.py`.*
+*Output of an earlier version, which ran an Ultralytics oriented-box model
+trained on DOTA aerial imagery over the bundled public-domain NAIP scene of LAX.
+That model and the script that drew this image were removed when the project
+moved off Ultralytics. The current default detector learned from everyday photos
+(COCO), so it doesn't pick out aircraft in an overhead scene like this one;
+getting that back means fine-tuning it on aerial imagery (see Roadmap).*
 
 The vision pipeline is split on purpose:
 
-- **Precise object counts → a real detector on GPU.** RT-DETR / YOLO (Ultralytics)
-  runs on the RTX 3080 (CUDA) and produces bounding boxes and counts — the thing
-  general vision models can't do reliably.
+- **Precise object counts → a real detector on GPU.** RT-DETR, loaded through
+  Hugging Face Transformers, runs on the RTX 3080 (CUDA) and produces bounding
+  boxes and counts, which general vision models can't do reliably. Any
+  Transformers object-detection checkpoint can stand in via `DETECTOR_MODEL`.
 - **Everything else → OpenAI.** GPT vision writes a qualitative scene assessment of
   the image, and a second call fuses the detector's counts with that assessment into
   a SITREP.
@@ -25,7 +30,7 @@ The vision pipeline is split on purpose:
 
 | Component     | Path                   | Role                                              |
 | ------------- | ---------------------- | ------------------------------------------------- |
-| Detection     | `backend/detection.py` | Ultralytics detector (CUDA) + rasterio georef     |
+| Detection     | `backend/detection.py` | RT-DETR via Transformers (CUDA) + rasterio georef |
 | Reporting     | `backend/reporting.py` | OpenAI scene assessment + SITREP                  |
 | Live tracking | `backend/tracking.py`  | OpenSky poller → WebSocket broadcast              |
 | Storage       | `backend/db.py`        | PostGIS (SQLite fallback)                         |
@@ -46,7 +51,7 @@ Runs the live aircraft map immediately (SQLite fallback, no detector needed).
 ## Enable imagery detection (GPU box)
 
 ```bash
-pip install -r requirements-ml.txt   # ultralytics + rasterio; installs torch
+pip install -r requirements-ml.txt   # transformers + torch + rasterio
 # add your OpenAI key to .env
 ```
 
@@ -62,7 +67,8 @@ docker compose up --build
 ## Configuration
 
 See `.env.example`. Key vars: `OPENAI_API_KEY`, `OPENSKY_CLIENT_ID/SECRET`,
-`TRACK_BBOX`, `DETECTOR_MODEL`, `DATABASE_URL`.
+`TRACK_BBOX`, `DETECTOR_MODEL` (with `DETECTOR_REVISION`, the commit it's pinned
+to), `DATABASE_URL`.
 
 ## Roadmap
 
@@ -74,6 +80,8 @@ See `.env.example`. Key vars: `OPENAI_API_KEY`, `OPENSKY_CLIENT_ID/SECRET`,
 - [ ] AuthN/Z (currently open — see Security below)
 - [ ] AIS (maritime) feed as a second track source
 - [ ] Local-model reporting backend (Ollama) for offline use
+- [ ] Aerial detector: fine-tune RT-DETR on overhead imagery (the default model
+      learned from everyday photos and misses aircraft seen from above)
 
 ## Security & Compliance
 
