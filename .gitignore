@@ -9,3 +9,4 @@ uploads/
 .venv/
 .pytest_cache/
 .ruff_cache/
+models/

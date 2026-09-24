@@ -26,11 +26,15 @@ class Settings(BaseSettings):
     track_poll_seconds: int = 12
 
     # Detector — runs on the RTX 3080. "auto" -> CUDA when available, else CPU.
-    # Any Hugging Face object-detection checkpoint; pin it to a commit.
-    detector_model: str = "PekingU/rtdetr_r50vd"
+    # A local checkpoint folder, or a Hugging Face Hub id pinned to a commit.
+    # The default is the aerial fine-tune; `python fetch_detector.py` gets it.
+    detector_model: str = "models/rtdetr-dota-v1"
     detector_revision: str = "df939e661d8c52e80608d1ec566561aabd25a4e7"
     detector_device: str = "auto"
     detection_conf: float = 0.25
+    # Tile size in pixels for large scenes (0 = send the whole image at once).
+    detector_tile: int = 640
+    detector_tile_overlap: int = 160
 
     # Storage — PostGIS if DATABASE_URL is set, else a local SQLite file.
     database_url: str = ""

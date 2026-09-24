@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 type: software
 title: "Geoint"
-abstract: "Real-time geospatial-intelligence common operating picture: GPU object detection on georeferenced overhead imagery, fused with live ADS-B air tracks and LLM-generated SITREPs. FastAPI · Hugging Face Transformers (RT-DETR) · OpenAI · PostGIS · Leaflet."
+abstract: "Real-time geospatial-intelligence common operating picture: GPU object detection on georeferenced overhead imagery, fused with live ADS-B air tracks and LLM-generated SITREPs. FastAPI · Hugging Face Transformers (RT-DETR fine-tuned on DOTA) · OpenAI · PostGIS · Leaflet."
 authors:
   - family-names: "Fowler"
     given-names: "Michael"

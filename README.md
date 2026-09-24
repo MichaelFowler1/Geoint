@@ -4,21 +4,22 @@ A fused common operating picture: **live air tracks** from a public ADS-B feed a
 **object detections from overhead imagery**, on one map, with an automatically
 generated SITREP.
 
-![GEOINT-COP: aircraft detected at LAX from NAIP imagery](docs/hero.png)
+![GEOINT-COP: 47 aircraft detected at LAX from NAIP imagery](docs/hero.png)
 
-*Output of an earlier version, which ran an Ultralytics oriented-box model
-trained on DOTA aerial imagery over the bundled public-domain NAIP scene of LAX.
-That model and the script that drew this image were removed when the project
-moved off Ultralytics. The current default detector learned from everyday photos
-(COCO), so it doesn't pick out aircraft in an overhead scene like this one;
-getting that back means fine-tuning it on aerial imagery (see Roadmap).*
+*Real output: the aerial detector (RT-DETR fine-tuned on DOTA, CUDA) run
+through the app's own tiled pipeline over the bundled public-domain NAIP scene
+of LAX. Regenerate with `python make_hero.py`. Two thin boxes and the
+"storage-tank" are false alarms; the rest are aircraft.*
 
 The vision pipeline is split on purpose:
 
 - **Precise object counts → a real detector on GPU.** RT-DETR, loaded through
-  Hugging Face Transformers, runs on the RTX 3080 (CUDA) and produces bounding
-  boxes and counts, which general vision models can't do reliably. Any
-  Transformers object-detection checkpoint can stand in via `DETECTOR_MODEL`.
+  Hugging Face Transformers and fine-tuned on DOTA aerial imagery, runs on the
+  RTX 3080 (CUDA) and produces bounding boxes and counts, which general vision
+  models can't do reliably. Large scenes are cut into overlapping full
+  resolution tiles, so a 60 m airliner at 0.6 m per pixel stays 100 pixels long
+  instead of shrinking to a smudge. Any Transformers object-detection
+  checkpoint can stand in via `DETECTOR_MODEL`.
 - **Everything else → OpenAI.** GPT vision writes a qualitative scene assessment of
   the image, and a second call fuses the detector's counts with that assessment into
   a SITREP.
@@ -52,11 +53,34 @@ Runs the live aircraft map immediately (SQLite fallback, no detector needed).
 
 ```bash
 pip install -r requirements-ml.txt   # transformers + torch + rasterio
+python fetch_detector.py             # aerial weights from the GitHub release
 # add your OpenAI key to .env
 ```
 
 Upload an overhead image in the UI. Georeferenced GeoTIFFs plot detections on the map;
 plain image chips still get counts + a SITREP.
+
+### The aerial detector
+
+`fetch_detector.py` downloads
+[`rtdetr-dota-v1`](https://github.com/MichaelFowler1/Geoint/releases/tag/aerial-detector-v1)
+(159 MB), checks its SHA-256 and unpacks it into `models/`, where
+`DETECTOR_MODEL` points by default. It's `PekingU/rtdetr_r50vd` fine-tuned for
+6 epochs on DOTA v1.0's 15 classes (planes, ships, vehicles, storage tanks,
+bridges and more) on one RTX 3080. On held-out DOTA tiles it scores AP50 0.91
+on planes and 0.64 across all classes.
+
+Its confidence is calibrated. The raw scores rank detections well but run low,
+so the download carries a per-class table, fitted on DOTA's validation tiles,
+that turns a raw score into the share of detections at that score that were
+real. `DETECTION_CONF=0.25` therefore means roughly one in four or better.
+Vehicles are its weak point on NAIP: a car at 0.6 m per pixel is about 7 pixels
+long, and it misses most of them.
+
+**The weights are for noncommercial academic and research use only.** They
+were trained on DOTA, whose images and labels are licensed for academic use
+only, and that limit carries over to them. The model card in the download has
+the details.
 
 ## Full stack (PostGIS, containerized)
 
@@ -80,8 +104,8 @@ to), `DATABASE_URL`.
 - [ ] AuthN/Z (currently open — see Security below)
 - [ ] AIS (maritime) feed as a second track source
 - [ ] Local-model reporting backend (Ollama) for offline use
-- [ ] Aerial detector: fine-tune RT-DETR on overhead imagery (the default model
-      learned from everyday photos and misses aircraft seen from above)
+- [x] Aerial detector: RT-DETR fine-tuned on DOTA, with calibrated confidence
+- [ ] Rotated boxes, and a detector that can find cars at NAIP's 0.6 m
 
 ## Security & Compliance
 
