@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import bisect
 import json
 import logging
 from collections import Counter
@@ -95,15 +96,27 @@ def calibrate(
     """
     if not table:
         return list(scores)
-    import numpy as np  # noqa: PLC0415
-
     out = []
     for score, label in zip(scores, labels):
         if label in table:
-            xs, ys = table[label]
-            score = float(np.interp(score, xs, ys))
+            score = _interp(score, *table[label])
         out.append(score)
     return out
+
+
+def _interp(x: float, xs: list[float], ys: list[float]) -> float:
+    """Piecewise-linear interpolation, flat outside the breakpoints.
+
+    Plain Python rather than numpy.interp so the helper runs, and is tested,
+    on the light install that has no numpy.
+    """
+    if x <= xs[0]:
+        return float(ys[0])
+    if x >= xs[-1]:
+        return float(ys[-1])
+    hi = bisect.bisect_right(xs, x)
+    x0, x1, y0, y1 = xs[hi - 1], xs[hi], ys[hi - 1], ys[hi]
+    return float(y0 + (y1 - y0) * (x - x0) / (x1 - x0))
 
 
 def _read_rgb(image_path: str):
